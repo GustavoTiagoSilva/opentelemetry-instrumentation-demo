@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-agent-config
+  labels: {{ include "otel.labels" . | nindent 4 }}
+data:
+  agent-config.yaml: |
+{{ tpl .Values.agent.config . | indent 4 }}

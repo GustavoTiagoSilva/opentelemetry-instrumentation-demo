@@ -1,0 +1,32 @@
+{{- if .Values.agent.enabled }}
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ .Release.Name }}-agent
+  labels: {{ include "otel.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels: {{ include "otel.labels" . | nindent 6 }}
+  template:
+    metadata:
+      labels: {{ include "otel.labels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: agent
+          image: "{{ .Values.global.image.repository }}:{{ .Values.global.image.tag }}"
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          command: ["/otelcol-contrib", "--config=/conf/agent-config.yaml"]
+          startupProbe:
+            tcpSocket:
+              port: 4317
+            periodSeconds: 5
+            failureThreshold: 60   # 5 s × 60 = 5 min
+          volumeMounts:
+            - name: config
+              mountPath: /conf
+          resources: {{ toYaml .Values.agent.resources | nindent 12 }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ .Release.Name }}-agent-config
+{{- end }}

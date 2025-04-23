@@ -1,7 +1,4 @@
 services:
-  # -------------------
-  # First Microservice
-  # -------------------
   first-microservice:
     container_name: first-microservice
     build: ./first-microservice
@@ -9,64 +6,8 @@ services:
       - "8080:8080"
     environment:
       - SECOND_MICROSERVICE_URI=http://second-microservice:8081
-    depends_on:
-      - otel-agent-first-microservice
-    networks: [ observability ]
-
-  otel-agent-first-microservice:
-    container_name: otel-agent-first-microservice
-    image: otel/opentelemetry-collector-contrib:0.96.0
-    command: [ "--config=/etc/otel/agent-config.yaml" ]
-    depends_on:
-      - otel-gateway
-    volumes:
-      - ./collector/agent-config.yaml:/etc/otel/agent-config.yaml
-    networks: [ observability ]
-
-  # -------------------
-  # Second microservice
-  # -------------------
   second-microservice:
     container_name: second-microservice
     build: ./second-microservice
     ports:
       - "8081:8081"
-    depends_on:
-      - otel-agent-second-microservice
-      - otel-gateway
-    networks: [ observability ]
-
-  otel-agent-second-microservice:
-    container_name: otel-agent-second-microservice
-    image: otel/opentelemetry-collector-contrib:0.96.0
-    command: [ "--config=/etc/otel/agent-config.yaml" ]
-    volumes:
-      - ./collector/agent-config.yaml:/etc/otel/agent-config.yaml
-    networks: [ observability ]
-
-  # -------------------
-  # Gateway Collector
-  # -------------------
-  otel-gateway:
-    container_name: otel-gateway
-    image: otel/opentelemetry-collector-contrib:0.96.0
-    command: [ "--config=/etc/otel/gateway-config.yaml" ]
-    volumes:
-      - ./collector/gateway-config.yaml:/etc/otel/gateway-config.yaml
-    ports:
-      - "4317:4317"
-    networks: [ observability ]
-
-  # -------------------
-  # Jaeger (backend)
-  # -------------------
-  jaeger:
-    container_name: jaeger
-    image: jaegertracing/all-in-one:1.58
-    ports:
-      - "16686:16686"  # UI
-    networks: [ observability ]
-
-networks:
-  observability:
-    driver: bridge

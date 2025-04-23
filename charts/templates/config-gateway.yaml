@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-gateway-config
+  labels: {{ include "otel.labels" . | nindent 4 }}
+data:
+  gateway-config.yaml: |
+{{ tpl .Values.gateway.config . | indent 4 }}
