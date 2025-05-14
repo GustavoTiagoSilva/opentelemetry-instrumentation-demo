@@ -1,4 +1,3 @@
-
 # Distributed Tracing Demo with OpenTelemetry on Kubernetes
 
 ## 📌 Purpose
