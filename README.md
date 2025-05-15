@@ -157,6 +157,7 @@ No HTTP endpoints — only `@KafkaListener(topics = "greetings")`.
 ## Deploying to Kubernetes
 
 ```bash
+kubectl create namespace observability
 helm install otel-demo ./charts  --namespace observability
 ```
 
