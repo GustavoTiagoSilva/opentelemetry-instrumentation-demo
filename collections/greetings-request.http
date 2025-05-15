@@ -1,0 +1,3 @@
+### GET request para o segundo microserviço
+GET http://localhost:8080/greetings/hello-second-microservice
+Accept: application/json

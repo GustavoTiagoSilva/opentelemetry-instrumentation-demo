@@ -5,9 +5,143 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - SECOND_MICROSERVICE_URI=http://second-microservice:8081
+      - SECOND_MICROSERVICE_URI=http://second-microservice:8080
+    networks:
+      - application
+    depends_on:
+      - jaeger
+      - second-microservice
+      - otel-gateway
+      - otel-agent-first-microservice
   second-microservice:
     container_name: second-microservice
     build: ./second-microservice
     ports:
-      - "8081:8081"
+      - "8081:8080"
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka:19092"
+    networks:
+      - application
+      - kafkademo
+    depends_on:
+      - jaeger
+      - otel-gateway
+      - third-microservice
+      - otel-agent-second-microservice
+      - zoo
+      - kafka
+  third-microservice:
+    container_name: third-microservice
+    build: ./third-microservice
+    ports:
+      - "8082:8080"
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka:19092"
+    networks:
+      - application
+      - kafkademo
+    depends_on:
+      - jaeger
+      - otel-gateway
+      - otel-agent-third-microservice
+      - zoo
+      - kafka
+  zoo:
+    container_name: "zoo"
+    image: confluentinc/cp-zookeeper:5.5.0
+    hostname: zoo
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - kafkademo
+      - application
+  kafka:
+    container_name: "kafka"
+    image: confluentinc/cp-kafka:5.5.0
+    hostname: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zoo:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:19092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    depends_on:
+      - zoo
+    networks:
+      - kafkademo
+      - application
+  jaeger:
+    container_name: "jaeger"
+    image: jaegertracing/all-in-one:1.52
+    ports:
+      - "16686:16686"
+      - "14268:14268"
+      - "4317:4317"
+      - "4318:4318"
+    networks:
+      - observability
+  otel-agent-first-microservice:
+    container_name: "otel-agent-first-microservice"
+    image: otel/opentelemetry-collector:0.99.0
+    command: [ "--config=/etc/agent-config.yaml" ]
+    volumes:
+      - ./collector/agent-config.yaml:/etc/agent-config.yaml
+    ports:
+      - "14317:4317"
+      - "14318:4318"
+    depends_on:
+      - jaeger
+    networks:
+      - application
+      - observability
+  otel-agent-second-microservice:
+    container_name: "otel-agent-second-microservice"
+    image: otel/opentelemetry-collector:0.99.0
+    command: [ "--config=/etc/agent-config.yaml" ]
+    volumes:
+      - ./collector/agent-config.yaml:/etc/agent-config.yaml
+    ports:
+      - "24317:4317"
+      - "24318:4318"
+    depends_on:
+      - jaeger
+    networks:
+      - application
+      - observability
+  otel-agent-third-microservice:
+    container_name: "otel-agent-third-microservice"
+    image: otel/opentelemetry-collector:0.99.0
+    command: [ "--config=/etc/agent-config.yaml" ]
+    volumes:
+      - ./collector/agent-config.yaml:/etc/agent-config.yaml
+    ports:
+      - "34317:4317"
+      - "34318:4318"
+    depends_on:
+      - jaeger
+    networks:
+      - application
+      - observability
+  otel-gateway:
+    container_name: "otel-gateway"
+    image: otel/opentelemetry-collector:0.99.0
+    command: [ "--config=/etc/gateway-config.yaml" ]
+    volumes:
+      - ./collector/gateway-config.yaml:/etc/gateway-config.yaml
+    ports:
+      - "44317:4317"
+      - "44318:4318"
+    depends_on:
+      - jaeger
+    networks:
+      - observability
+networks:
+  application:
+  kafkademo:
+  observability:
