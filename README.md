@@ -157,7 +157,7 @@ No HTTP endpoints — only `@KafkaListener(topics = "greetings")`.
 ## Deploying to Kubernetes
 
 ```bash
-helm install otel-demo ./charts   --set jaeger.enabled=true   --namespace observability
+helm install otel-demo ./charts  --namespace observability
 ```
 
 ---
