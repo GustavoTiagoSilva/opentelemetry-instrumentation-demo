@@ -1,0 +1,17 @@
+{{- if .Values.gateway.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-gateway
+  labels: {{ include "otel.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.gateway.service.type }}
+  selector: {{ include "otel.labels" . | nindent 4 }}
+  ports:
+    - port: 4317
+      targetPort: grpc
+      name: otlp-grpc
+    - port: 4318
+      targetPort: http
+      name: otlp-http
+{{- end }}

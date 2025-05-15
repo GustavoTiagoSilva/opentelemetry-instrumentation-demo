@@ -1,0 +1,40 @@
+{{- if .Values.jaeger.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-jaeger
+  labels: {{ include "otel.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {{ include "otel.labels" . | nindent 6 }}
+  template:
+    metadata:
+      labels: {{ include "otel.labels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: jaeger
+          image: {{ .Values.jaeger.image }}
+          ports:
+            - containerPort: 16686
+              name: ui
+            - containerPort: 4318
+              name: otlp-http
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-jaeger
+  labels: {{ include "otel.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.jaeger.service.type }}
+  selector: {{ include "otel.labels" . | nindent 4 }}
+  ports:
+    - port: 16686
+      targetPort: 16686
+      name: ui
+    - port: 4318
+      targetPort: 4318
+      name: otlp-http
+{{- end }}

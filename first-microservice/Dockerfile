@@ -25,7 +25,7 @@ COPY opentelemetry-javaagent.jar /otel/otel.jar
 
 ENV \
   OTEL_SERVICE_NAME=first-microservice \
-  OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-agent-first-microservice:4318 \
+  OTEL_EXPORTER_OTLP_ENDPOINT=http://host.docker.internal:4318 \
   OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf \
   OTEL_METRICS_EXPORTER=none \
   OTEL_LOGS_EXPORTER=none \

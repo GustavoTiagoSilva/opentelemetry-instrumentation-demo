@@ -1,0 +1,62 @@
+global:
+  image:
+    repository: otel/opentelemetry-collector-contrib
+    tag: "0.96.0"
+    pullPolicy: IfNotPresent
+
+agent:
+  enabled: true
+  resources: {}
+  config: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+          http:
+    processors:
+      batch: {}
+    exporters:
+      otlp:
+        endpoint: "{{ .Release.Name }}-gateway:4317"
+        tls:
+          insecure: true
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [otlp]
+
+gateway:
+  enabled: true
+  service:
+    type: ClusterIP
+    grpcPort: 4317
+    httpPort: 4318
+  resources: {}
+  config: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+          http:
+    processors:
+      batch: {}
+    exporters:
+      otlphttp:
+        endpoint: "http://{{ .Release.Name }}-jaeger:4318"
+        tls:
+          insecure: true
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [otlphttp]
+
+jaeger:
+  enabled: true
+  image: jaegertracing/all-in-one:1.58
+  service:
+    type: ClusterIP
+    uiPort: 16686
