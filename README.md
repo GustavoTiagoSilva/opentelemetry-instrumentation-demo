@@ -16,7 +16,7 @@ All required infrastructure (Kafka, Zookeeper, OpenTelemetry Collector + Gatew
 graph TD
   subgraph Application
     F([first-microservice]) -->|HTTP| S([second-microservice])
-    S -->|Produce\ntopic=greetings| K((Kafka))
+    S -->|Produce<br/>topic=greetings| K((Kafka))
     K -->|Consume| T([third-microservice])
   end
 
@@ -47,12 +47,45 @@ graph TD
 
 ---
 
+## Environment Variables
+
+### first‑microservice
+
+| Variable | Value (compose) | Description |
+|----------|-----------------|-------------|
+| `SECOND_MICROSERVICE_URI` | `http://second-microservice:8080` | Base URL used to call the *second‑microservice*. |
+| `OTEL_SERVICE_NAME` | `first-microservice` | Service name reported in traces. |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://host.docker.internal:4318` | OTLP endpoint the agent pushes spans to. |
+| `OTEL_EXPORTER_OTLP_PROTOCOL` | `http/protobuf` | OTLP protocol used. |
+| `OTEL_METRICS_EXPORTER` / `OTEL_LOGS_EXPORTER` | `none` | Disables metrics and logs export. |
+| `JAVA_TOOL_OPTIONS` | `-javaagent:/otel/otel.jar` | Injects the Java auto‑instrumentation agent. |
+
+### second‑microservice
+
+| Variable | Value (compose) | Description |
+|----------|-----------------|-------------|
+| `KAFKA_BOOTSTRAP_SERVERS` or `SPRING_KAFKA_BOOTSTRAP_SERVERS` | `kafka:19092` | Kafka broker address used by the *producer*. |
+| `OTEL_SERVICE_NAME` | `second-microservice` | Service name in traces. |
+| Other `OTEL_*` vars | same as above | Same meaning as in the first service. |
+
+### third‑microservice
+
+| Variable | Value (compose) | Description |
+|----------|-----------------|-------------|
+| `SPRING_KAFKA_BOOTSTRAP_SERVERS` | `kafka:19092` | Kafka broker address used by the *consumer*. |
+| `OTEL_SERVICE_NAME` | `third-microservice` | Service name in traces. |
+| Other `OTEL_*` vars | same as above | Same meaning as in the first service. |
+
+> **Note:** `OTEL_*` values can be overridden as needed (e.g., to tweak sampling or backend).
+
+---
+
 ## Quick Start
 
 1. **Prerequisites**  
    * Docker Desktop ⩾ 4.x  
    * `docker compose` CLI  
-   * (Optional) `make`, `curl`, `kcat`
+   * (Optional) `kcat` for Kafka tests
 
 2. **Spin up the stack**
 
@@ -60,7 +93,7 @@ graph TD
    docker compose up --build -d
    ```
 
-   Accessible services:
+   Available services:
 
    | Service               | URL / Port                 | Notes                              |
    |-----------------------|----------------------------|------------------------------------|
@@ -77,7 +110,7 @@ graph TD
    ```
 
    *A root span is created and travels across the three services.*  
-   In Jaeger look for **service = `first-microservice`**.
+   In Jaeger, filter by **service = `first-microservice`**.
 
 4. **Publish messages directly (optional)**
 
@@ -115,8 +148,8 @@ No HTTP endpoints — only `@KafkaListener(topics = "greetings")`.
 
 * **Java auto‑instrumentation**: each Dockerfile injects the *javaagent* (`otel.jar`) via `JAVA_TOOL_OPTIONS`.
 * **Collector/Agent**  
-  * `agent-config.yaml` – scrapes spans from each service container and pushes to Gateway  
-  * `gateway-config.yaml` – optional processors & tail‑sampling; forwards to Jaeger (`grpc/4317`, `http/4318`)
+  * `agent-config.yaml` – scrapes spans from each service container and pushes to Gateway.  
+  * `gateway-config.yaml` – processors (filtering, tail‑sampling) and export to Jaeger (`grpc/4317`, `http/4318`).
 * **Sampling strategies**: tweak `tail_sampling` processor inside `gateway-config.yaml`.
 
 ---
@@ -124,18 +157,16 @@ No HTTP endpoints — only `@KafkaListener(topics = "greetings")`.
 ## Deploying to Kubernetes
 
 ```bash
-helm install otel-demo ./charts   --namespace observability
+helm install otel-demo ./charts   --set jaeger.enabled=true   --namespace observability
 ```
-
-Pods for microservices, Collector, Kafka, and Jaeger will be created based on the manifests in `charts/`.
 
 ---
 
 ## Next Steps
 
-* Enable **OpenTelemetry Metrics & Logs** (`OTEL_METRICS_EXPORTER`, `OTEL_LOGS_EXPORTER`)
-* Add **Resilience patterns** (circuit breaker, retries) and observe their traces.
-* Switch to an alternative backend (Tempo, Elastic APM, Grafana Loki).
+* Enable **OpenTelemetry Metrics & Logs**.
+* Add **resilience patterns** (circuit breaker, retries) and observe their spans.
+* Try alternative backends (Tempo, Elastic APM, Grafana Loki).
 
 ---
 
